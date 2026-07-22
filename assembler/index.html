@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>化学教学插图提示词装配器</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: "PingFang SC","Microsoft YaHei",sans-serif; background:#f5f6f8; color:#222; line-height:1.6; }
+  .wrap { max-width: 1180px; margin: 0 auto; padding: 24px 16px 60px; }
+  h1 { font-size: 22px; margin-bottom: 4px; }
+  .sub { color:#666; font-size: 13px; margin-bottom: 20px; }
+  .cols { display: flex; gap: 20px; flex-wrap: wrap; }
+  .col { flex: 1 1 460px; min-width: 320px; }
+  .card { background:#fff; border:1px solid #e2e4e8; border-radius:10px; padding:18px 20px; margin-bottom:16px; }
+  label { display:block; font-weight:600; font-size:14px; margin:12px 0 4px; }
+  label:first-of-type { margin-top: 0; }
+  .hint { font-weight:400; color:#888; font-size:12px; margin-left:6px; }
+  input[type=text], input[type=password], textarea, select {
+    width:100%; padding:8px 10px; border:1px solid #ccd0d6; border-radius:6px;
+    font-size:14px; font-family:inherit; background:#fff;
+  }
+  textarea { resize: vertical; }
+  input:focus, textarea:focus, select:focus { outline:2px solid #4d96ff44; border-color:#4d96ff; }
+  .btns { display:flex; gap:10px; margin:14px 0 0; flex-wrap:wrap; }
+  button {
+    padding:9px 18px; border:none; border-radius:6px; font-size:14px; cursor:pointer;
+    background:#e8eaee; color:#333;
+  }
+  button.primary { background:#2f6fed; color:#fff; font-weight:600; }
+  button:disabled { opacity:.5; cursor:not-allowed; }
+  button:hover:not(:disabled) { filter:brightness(0.95); }
+  #output {
+    white-space:pre-wrap; word-break:break-all; font-size:13.5px; background:#fbfbfc;
+    border:1px dashed #c5c9d0; border-radius:8px; padding:14px; min-height:300px;
+  }
+  .ok { color:#1a7f37; font-size:13px; margin-left:8px; visibility:hidden; }
+  .foot { color:#999; font-size:12px; margin-top:18px; }
+  .warn { background:#fff8e6; border:1px solid #f0dfae; border-radius:8px; padding:10px 14px; font-size:13px; margin-bottom:16px; }
+  details.api { border:1px solid #e2e4e8; border-radius:10px; background:#fff; margin-bottom:16px; }
+  details.api > summary { padding:14px 20px; font-weight:600; font-size:14px; cursor:pointer; list-style:none; }
+  details.api > summary::before { content:"▸ "; }
+  details.api[open] > summary::before { content:"▾ "; }
+  details.api .inner { padding:0 20px 18px; }
+  #genStatus { font-size:13px; margin-top:10px; color:#555; white-space:pre-wrap; }
+  #genStatus.err { color:#c0392b; }
+  #resultBox { margin-top:12px; }
+  #resultBox img { max-width:100%; border:1px solid #ddd; border-radius:8px; }
+  .keynote { font-size:12px; color:#888; margin-top:6px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>化学教学插图提示词装配器</h1>
+  <div class="sub">填空 → 自动拼装完整提示词 → 复制到任何支持文生图的对话式 AI（GPT 系列、豆包、即梦等），或在下方配置 API 直接生成。本页为单文件工具，配置保存在本机浏览器。</div>
+  <div class="warn">提醒：生成后请对照仓库中的<b>质检清单</b>逐项人工核验（中文逐字校对、微粒逐个清点、位置关系核对），未经质检不得直接用于教学。</div>
+
+  <div class="cols">
+    <div class="col">
+      <div class="card">
+        <label>教学主题 <span class="hint">这张图讲什么</span></label>
+        <input type="text" id="theme" placeholder="例：钠与水反应的实验现象">
+
+        <label>画面结构</label>
+        <select id="structure">
+          <option>四格分镜</option>
+          <option>三格分镜</option>
+          <option>左右对比</option>
+          <option>三区布局</option>
+          <option>单场景</option>
+          <option>时间线</option>
+        </select>
+
+        <label>逐格 / 逐区描述 <span class="hint">每行一格；写清画面与标注（逐字）</span></label>
+        <textarea id="panels" rows="6" placeholder="第1格：小黑用长镊子将一小块钠放到烧杯水面，红色标注：钠浮于水面&#10;第2格：……"></textarea>
+
+        <label>角色道具 <span class="hint">按需添加，无则留空</span></label>
+        <input type="text" id="props" placeholder="例：护目镜">
+
+        <label>角色核心动作</label>
+        <input type="text" id="action" placeholder="例：认真地进行实验并观察">
+      </div>
+
+      <div class="card">
+        <label>显式化补充 <span class="hint">涉及计数/位置/连接时逐条写明，每行一条</span></label>
+        <textarea id="explicit" rows="3" placeholder="例：恰好 2 个水分子；两侧原子种类与个数一致&#10;例：温度计水银球恰好位于支管口处"></textarea>
+
+        <label>图内文字白名单 <span class="hint">允许出现的全部文字，每行一条</span></label>
+        <textarea id="whitelist" rows="4" placeholder="钠浮于水面&#10;熔成小球四处游动"></textarea>
+
+        <label>本图特有约束 <span class="hint">每行一条</span></label>
+        <textarea id="constraints" rows="3" placeholder="例：钠浮于水面绝不下沉；任何一格不出现火焰"></textarea>
+      </div>
+
+      <div class="card">
+        <label>角色描述 <span class="hint">可整体替换为你的班本角色</span></label>
+        <textarea id="character" rows="2">小黑：小型全黑实心怪物，白色圆点眼，细腿，表情呆滞认真。</textarea>
+        <label>风格描述 <span class="hint">一般不用改</span></label>
+        <textarea id="style" rows="4">纯白背景；极简黑色手绘线稿，笔线轻微抖动；大量留白；少量手写体中文标注，只用红/橙/蓝三色平涂。禁止：渐变、阴影、商业矢量风、PPT 信息图、幼稚儿童插画；图上任何位置不写标题。</textarea>
+      </div>
+    </div>
+
+    <div class="col">
+      <div class="card">
+        <label>拼装结果 <span class="ok" id="copied">已复制 ✓</span></label>
+        <div id="output"></div>
+        <div class="btns">
+          <button class="primary" id="copyBtn">复制提示词</button>
+          <button id="exampleBtn">载入示例（钠与水）</button>
+          <button id="clearBtn">清空</button>
+        </div>
+        <div class="foot">拼装遵循固定五要素：风格 → 角色 → 主题 → 结构（逐格） → 显式化 → 标注白名单 → 约束。角色只能"操作、观察"微观世界，不要让它扮演原子分子本身。</div>
+      </div>
+
+      <details class="api" id="apiPanel">
+        <summary>直连 API 生成（可选 · 进阶）</summary>
+        <div class="inner">
+          <label>平台预设</label>
+          <select id="apiPreset">
+            <option value="custom">自定义（OpenAI 兼容格式）</option>
+            <option value="ark">火山方舟 · 豆包 Seedream</option>
+            <option value="dashscope">阿里云百炼 · 通义万相（兼容模式）</option>
+            <option value="openai">OpenAI 官方</option>
+          </select>
+
+          <label>生图接口完整地址 <span class="hint">POST 到该 URL，可自由修改</span></label>
+          <input type="text" id="apiUrl" placeholder="https://…/images/generations">
+
+          <label>API Key</label>
+          <input type="password" id="apiKey" placeholder="仅保存在本机浏览器，不会上传到任何服务器">
+          <div class="keynote">Key 只存在你这台电脑的浏览器 localStorage 里；网页本身无后端、不收集任何数据。</div>
+
+          <label>模型名</label>
+          <input type="text" id="apiModel" placeholder="例：doubao-seedream-5.0-lite">
+
+          <label>图片尺寸</label>
+          <input type="text" id="apiSize" value="2560x1440">
+
+          <div class="btns">
+            <button class="primary" id="genBtn">用当前提示词生成图片</button>
+            <button id="saveCfgBtn">保存配置</button>
+          </div>
+          <div id="genStatus"></div>
+          <div id="resultBox"></div>
+          <div class="keynote">注意：部分平台不允许浏览器网页直接跨域调用（CORS）。若下方报"网络/跨域错误"，说明该平台只能由服务器端调用——请改用"复制提示词"粘贴到平台自己的网页或 App，效果相同。</div>
+        </div>
+      </details>
+    </div>
+  </div>
+</div>
+
+<script>
+const F = ["theme","structure","panels","props","action","explicit","whitelist","constraints","character","style"];
+const A = ["apiUrl","apiKey","apiModel","apiSize"];
+const $ = id => document.getElementById(id);
+
+function lines(id, sep) {
+  return $(id).value.split("\n").map(s => s.trim()).filter(Boolean).join(sep);
+}
+
+function assemble() {
+  const props = $("props").value.trim() || "无";
+  const action = $("action").value.trim() || "承担画面的核心动作";
+  const theme = $("theme").value.trim() || "〔教学主题〕";
+  const panels = lines("panels", "；") || "〔逐格描述画面与标注〕";
+  const wl = lines("whitelist", "／") || "〔标注1／标注2〕";
+  const exp = lines("explicit", "；");
+  const cons = lines("constraints", "；");
+
+  let t = "生成一张独立的 16:9 横版中文高中化学教学插图。\n";
+  t += "【风格】" + $("style").value.trim() + "\n";
+  t += "【角色】" + $("character").value.trim() + "本图道具：" + props + "。角色正在" + action + "。\n";
+  t += "【主题】" + theme + "\n";
+  t += "【结构】" + $("structure").value + "，逐格描述：" + panels + "\n";
+  t += "【显式化】涉及即写明：微粒“恰好 N 个”并两侧守恒；位置用“A 的 X 端对准 B 的 Y 处”句式；结构式逐原子指定成键。" + (exp ? "本图明确：" + exp + "。" : "") + "\n";
+  t += "【标注】图内只允许出现以下文字，逐字使用，不得增减：" + wl + "\n";
+  t += "【约束】化学准确性最高优先；" + (cons ? cons + "；" : "") + "留白至少 30%；有趣但不幼稚。";
+  $("output").textContent = t;
+  try { localStorage.setItem("aichem_assembler", JSON.stringify(Object.fromEntries(F.map(k => [k, $(k).value])))); } catch(e) {}
+}
+
+$("copyBtn").onclick = () => {
+  const txt = $("output").textContent;
+  const done = () => { $("copied").style.visibility = "visible"; setTimeout(() => $("copied").style.visibility = "hidden", 1500); };
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(txt).then(done).catch(() => fallbackCopy(txt, done));
+  } else { fallbackCopy(txt, done); }
+};
+function fallbackCopy(txt, done) {
+  const ta = document.createElement("textarea");
+  ta.value = txt; document.body.appendChild(ta); ta.select();
+  document.execCommand("copy"); document.body.removeChild(ta); done();
+}
+
+$("exampleBtn").onclick = () => {
+  $("theme").value = "钠与水反应的实验现象";
+  $("structure").value = "四格分镜";
+  $("panels").value = "第1格：小黑用长镊子将一小块钠放到烧杯水面，红色标注：钠浮于水面\n第2格：钠熔成闪亮小球在水面游动并带运动线，红色标注：熔成小球四处游动\n第3格：小球旁画“嘶嘶”声符，小黑侧耳倾听，红色标注：发出嘶嘶声\n第4格：烧杯内溶液变粉红，小黑指向烧杯，蓝色标注：滴有酚酞的溶液变红";
+  $("props").value = "护目镜";
+  $("action").value = "认真地进行实验并观察";
+  $("explicit").value = "";
+  $("whitelist").value = "钠浮于水面\n熔成小球四处游动\n发出嘶嘶声\n滴有酚酞的溶液变红\n嘶嘶";
+  $("constraints").value = "钠浮于水面绝不下沉\n任何一格不出现火焰";
+  assemble();
+};
+
+$("clearBtn").onclick = () => {
+  ["theme","panels","props","action","explicit","whitelist","constraints"].forEach(k => $(k).value = "");
+  assemble();
+};
+
+// ---------- API 直连 ----------
+const PRESETS = {
+  ark:       { url: "https://ark.cn-beijing.volces.com/api/v3/images/generations", model: "doubao-seedream-5.0-lite", size: "2560x1440" },
+  dashscope: { url: "https://dashscope.aliyuncs.com/compatible-mode/v1/images/generations", model: "wan2.2-t2i-flash", size: "1664x928" },
+  openai:    { url: "https://api.openai.com/v1/images/generations", model: "gpt-image-1", size: "1536x1024" },
+  custom:    { url: "", model: "", size: "2560x1440" }
+};
+
+$("apiPreset").onchange = () => {
+  const p = PRESETS[$("apiPreset").value];
+  $("apiUrl").value = p.url; $("apiModel").value = p.model; $("apiSize").value = p.size;
+};
+
+function saveCfg() {
+  try {
+    const cfg = Object.fromEntries(A.map(k => [k, $(k).value]));
+    cfg.preset = $("apiPreset").value;
+    localStorage.setItem("aichem_apicfg", JSON.stringify(cfg));
+    setStatus("配置已保存到本机浏览器。", false);
+  } catch(e) { setStatus("保存失败：" + e.message, true); }
+}
+$("saveCfgBtn").onclick = saveCfg;
+
+function setStatus(msg, isErr) {
+  const s = $("genStatus");
+  s.textContent = msg;
+  s.className = isErr ? "err" : "";
+}
+
+$("genBtn").onclick = async () => {
+  const url = $("apiUrl").value.trim();
+  const key = $("apiKey").value.trim();
+  const model = $("apiModel").value.trim();
+  const size = $("apiSize").value.trim() || "2560x1440";
+  const prompt = $("output").textContent;
+  if (!url || !key || !model) { setStatus("请先填写接口地址、API Key 与模型名。", true); return; }
+  saveCfg();
+  $("genBtn").disabled = true;
+  setStatus("生成中……（通常需要 20~120 秒，请勿关闭页面）", false);
+  $("resultBox").innerHTML = "";
+  try {
+    const resp = await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "Authorization": "Bearer " + key },
+      body: JSON.stringify({ model: model, prompt: prompt, size: size, response_format: "url", watermark: false })
+    });
+    const text = await resp.text();
+    let data; try { data = JSON.parse(text); } catch(e) { throw new Error("返回内容不是 JSON：" + text.slice(0, 300)); }
+    if (!resp.ok) throw new Error("HTTP " + resp.status + "：" + (data.error && (data.error.message || JSON.stringify(data.error)) || text.slice(0, 300)));
+    const item = data.data && data.data[0];
+    if (!item) throw new Error("返回中没有图片数据：" + text.slice(0, 300));
+    if (item.url) {
+      $("resultBox").innerHTML = '<img src="' + item.url + '" alt="生成结果"><div class="keynote">右键图片可另存；链接通常有时效，请及时保存。</div>';
+      setStatus("生成完成 ✓ 请按质检清单逐项核验后再使用。", false);
+    } else if (item.b64_json) {
+      $("resultBox").innerHTML = '<img src="data:image/png;base64,' + item.b64_json + '" alt="生成结果"><div class="keynote">右键图片可另存。</div>';
+      setStatus("生成完成 ✓ 请按质检清单逐项核验后再使用。", false);
+    } else { throw new Error("未识别的返回格式。"); }
+  } catch(e) {
+    if (e instanceof TypeError) {
+      setStatus("网络/跨域错误：该平台可能不允许网页直接调用（CORS 限制），或网络不可达。\n请改用“复制提示词”粘贴到平台官网/App 生成，效果相同。\n（" + e.message + "）", true);
+    } else {
+      setStatus("生成失败：" + e.message, true);
+    }
+  } finally {
+    $("genBtn").disabled = false;
+  }
+};
+
+F.forEach(k => $(k).addEventListener("input", assemble));
+try {
+  const saved = JSON.parse(localStorage.getItem("aichem_assembler") || "null");
+  if (saved) F.forEach(k => { if (saved[k] !== undefined) $(k).value = saved[k]; });
+  const cfg = JSON.parse(localStorage.getItem("aichem_apicfg") || "null");
+  if (cfg) { A.forEach(k => { if (cfg[k] !== undefined) $(k).value = cfg[k]; }); if (cfg.preset) $("apiPreset").value = cfg.preset; }
+} catch(e) {}
+assemble();
+</script>
+</body>
+</html>
