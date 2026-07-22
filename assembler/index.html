@@ -5,59 +5,149 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>化学教学插图提示词装配器</title>
 <style>
+  :root {
+    --bg: #f6f6f4;
+    --card: #ffffff;
+    --ink: #191c22;
+    --sub: #6b7280;
+    --line: #e6e7ea;
+    --accent: #2b4acb;
+    --accent-soft: #eef1fc;
+    --ok: #0f7b3f;
+    --ok-bg: #ecf8f0;
+    --err: #b42318;
+    --err-bg: #fdf1f0;
+    --busy: #175cd3;
+    --busy-bg: #eef4fd;
+    --radius: 14px;
+  }
   * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { font-family: "PingFang SC","Microsoft YaHei",sans-serif; background:#f5f6f8; color:#222; line-height:1.6; }
-  .wrap { max-width: 1180px; margin: 0 auto; padding: 24px 16px 60px; }
-  h1 { font-size: 22px; margin-bottom: 4px; }
-  .sub { color:#666; font-size: 13px; margin-bottom: 20px; }
-  .cols { display: flex; gap: 20px; flex-wrap: wrap; }
-  .col { flex: 1 1 460px; min-width: 320px; }
-  .card { background:#fff; border:1px solid #e2e4e8; border-radius:10px; padding:18px 20px; margin-bottom:16px; }
-  label { display:block; font-weight:600; font-size:14px; margin:12px 0 4px; }
-  label:first-of-type { margin-top: 0; }
-  .hint { font-weight:400; color:#888; font-size:12px; margin-left:6px; }
+  html { scroll-behavior: smooth; }
+  body {
+    font-family: "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+    background:
+      radial-gradient(1200px 500px at 80% -10%, #e9edfb 0%, transparent 60%),
+      var(--bg);
+    color: var(--ink);
+    line-height: 1.65;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: 1240px; margin: 0 auto; padding: 40px 22px 80px; }
+
+  header.hero { margin-bottom: 30px; }
+  .brand { display: flex; align-items: center; gap: 12px; }
+  .dot {
+    width: 14px; height: 14px; border-radius: 50%;
+    background: var(--ink);
+    box-shadow: 0 0 0 4px #fff, 0 0 0 5px var(--line);
+  }
+  h1 { font-size: 26px; font-weight: 700; letter-spacing: .5px; }
+  .tagline { color: var(--sub); font-size: 14px; margin-top: 8px; max-width: 720px; }
+  .notice {
+    margin-top: 16px; padding: 12px 16px; font-size: 13px;
+    background: var(--accent-soft); border: 1px solid #dfe5f9;
+    border-left: 3px solid var(--accent); border-radius: 10px; color: #3a4467;
+    max-width: 860px;
+  }
+
+  .cols { display: grid; grid-template-columns: minmax(340px, 1fr) minmax(360px, 1fr); gap: 24px; align-items: start; }
+  @media (max-width: 880px) { .cols { grid-template-columns: 1fr; } }
+  .right-stick { position: sticky; top: 20px; }
+
+  .card {
+    background: var(--card); border: 1px solid var(--line);
+    border-radius: var(--radius); padding: 22px 24px; margin-bottom: 18px;
+    box-shadow: 0 1px 2px rgba(16,24,40,.04), 0 8px 24px -18px rgba(16,24,40,.12);
+  }
+  .card h2 {
+    font-size: 13px; font-weight: 700; color: var(--sub);
+    letter-spacing: 2px; text-transform: uppercase; margin-bottom: 14px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .card h2 .step {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 20px; height: 20px; border-radius: 50%;
+    background: var(--ink); color: #fff; font-size: 11px; letter-spacing: 0;
+  }
+
+  label { display: block; font-weight: 600; font-size: 14px; margin: 14px 0 6px; }
+  .card label:first-of-type, .inner label:first-of-type { margin-top: 0; }
+  .hint { font-weight: 400; color: #9aa0aa; font-size: 12px; margin-left: 6px; }
   input[type=text], input[type=password], textarea, select {
-    width:100%; padding:8px 10px; border:1px solid #ccd0d6; border-radius:6px;
-    font-size:14px; font-family:inherit; background:#fff;
+    width: 100%; padding: 9px 12px; border: 1px solid #d6d9df; border-radius: 9px;
+    font-size: 14px; font-family: inherit; background: #fff; color: var(--ink);
+    transition: border-color .15s, box-shadow .15s;
   }
   textarea { resize: vertical; }
-  input:focus, textarea:focus, select:focus { outline:2px solid #4d96ff44; border-color:#4d96ff; }
-  .btns { display:flex; gap:10px; margin:14px 0 0; flex-wrap:wrap; }
+  input:focus, textarea:focus, select:focus {
+    outline: none; border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(43,74,203,.12);
+  }
+
+  .btns { display: flex; gap: 10px; margin-top: 16px; flex-wrap: wrap; }
   button {
-    padding:9px 18px; border:none; border-radius:6px; font-size:14px; cursor:pointer;
-    background:#e8eaee; color:#333;
+    padding: 10px 20px; border: 1px solid transparent; border-radius: 9px;
+    font-size: 14px; font-weight: 600; cursor: pointer;
+    background: #eceef2; color: var(--ink);
+    transition: transform .06s, filter .15s, box-shadow .15s;
   }
-  button.primary { background:#2f6fed; color:#fff; font-weight:600; }
-  button:disabled { opacity:.5; cursor:not-allowed; }
-  button:hover:not(:disabled) { filter:brightness(0.95); }
+  button.primary {
+    background: var(--accent); color: #fff;
+    box-shadow: 0 4px 14px -6px rgba(43,74,203,.55);
+  }
+  button.ghost { background: transparent; border-color: #d6d9df; }
+  button:hover:not(:disabled) { filter: brightness(1.03); transform: translateY(-1px); }
+  button:active:not(:disabled) { transform: translateY(0); }
+  button:disabled { opacity: .45; cursor: not-allowed; }
+
   #output {
-    white-space:pre-wrap; word-break:break-all; font-size:13.5px; background:#fbfbfc;
-    border:1px dashed #c5c9d0; border-radius:8px; padding:14px; min-height:300px;
+    white-space: pre-wrap; word-break: break-all;
+    font: 13px/1.75 "SF Mono", Menlo, Consolas, monospace;
+    background: #fafbfc; border: 1px solid var(--line); border-radius: 10px;
+    padding: 16px; min-height: 280px; max-height: 46vh; overflow: auto;
   }
-  .ok { color:#1a7f37; font-size:13px; margin-left:8px; visibility:hidden; }
-  .foot { color:#999; font-size:12px; margin-top:18px; }
-  .warn { background:#fff8e6; border:1px solid #f0dfae; border-radius:8px; padding:10px 14px; font-size:13px; margin-bottom:16px; }
-  details.api { border:1px solid #e2e4e8; border-radius:10px; background:#fff; margin-bottom:16px; }
-  details.api > summary { padding:14px 20px; font-weight:600; font-size:14px; cursor:pointer; list-style:none; }
-  details.api > summary::before { content:"▸ "; }
-  details.api[open] > summary::before { content:"▾ "; }
-  details.api .inner { padding:0 20px 18px; }
-  #genStatus { font-size:13px; margin-top:10px; color:#555; white-space:pre-wrap; }
-  #genStatus.err { color:#c0392b; }
-  #resultBox { margin-top:12px; }
-  #resultBox img { max-width:100%; border:1px solid #ddd; border-radius:8px; }
-  .keynote { font-size:12px; color:#888; margin-top:6px; }
+  .foot { color: #9aa0aa; font-size: 12px; margin-top: 14px; }
+
+  .status {
+    display: none; margin-top: 14px; padding: 11px 14px;
+    border-radius: 10px; font-size: 13.5px; white-space: pre-wrap;
+    border: 1px solid transparent;
+  }
+  .status.show { display: block; }
+  .status.busy { background: var(--busy-bg); color: var(--busy); border-color: #cfe0fa; }
+  .status.ok   { background: var(--ok-bg);   color: var(--ok);   border-color: #cdeeda; }
+  .status.err  { background: var(--err-bg);  color: var(--err);  border-color: #f6d3cf; }
+
+  #resultBox { margin-top: 14px; }
+  #resultBox img { max-width: 100%; border: 1px solid var(--line); border-radius: 10px; box-shadow: 0 10px 30px -18px rgba(16,24,40,.25); }
+  .keynote { font-size: 12px; color: #9aa0aa; margin-top: 8px; }
+
+  details.api { border: 1px solid var(--line); border-radius: var(--radius); background: var(--card); margin-bottom: 18px;
+    box-shadow: 0 1px 2px rgba(16,24,40,.04), 0 8px 24px -18px rgba(16,24,40,.12); }
+  details.api > summary {
+    padding: 16px 24px; font-weight: 700; font-size: 14px; cursor: pointer; list-style: none;
+    display: flex; align-items: center; gap: 8px; user-select: none;
+  }
+  details.api > summary::-webkit-details-marker { display: none; }
+  details.api > summary::after { content: "展开"; margin-left: auto; font-weight: 400; font-size: 12px; color: var(--sub); }
+  details.api[open] > summary::after { content: "收起"; }
+  details.api .inner { padding: 0 24px 22px; border-top: 1px dashed var(--line); padding-top: 16px; }
+  .copyok { color: var(--ok); font-size: 13px; margin-left: 10px; opacity: 0; transition: opacity .2s; }
+  .copyok.show { opacity: 1; }
 </style>
 </head>
 <body>
 <div class="wrap">
-  <h1>化学教学插图提示词装配器</h1>
-  <div class="sub">填空 → 自动拼装完整提示词 → 复制到任何支持文生图的对话式 AI（GPT 系列、豆包、即梦等），或在下方配置 API 直接生成。本页为单文件工具，配置保存在本机浏览器。</div>
-  <div class="warn">提醒：生成后请对照仓库中的<b>质检清单</b>逐项人工核验（中文逐字校对、微粒逐个清点、位置关系核对），未经质检不得直接用于教学。</div>
+  <header class="hero">
+    <div class="brand"><span class="dot"></span><h1>化学教学插图提示词装配器</h1></div>
+    <p class="tagline">填空 → 自动拼装完整提示词 → 复制到任何支持文生图的对话式 AI（GPT 系列、豆包、即梦等），或配置 API 后一键生成。单文件工具，离线可用，所有内容仅保存在本机浏览器。</p>
+    <div class="notice">生成的图片须对照<b>质检清单</b>逐项人工核验（中文逐字校对、微粒逐个清点、位置关系核对）后方可用于教学。</div>
+  </header>
 
   <div class="cols">
-    <div class="col">
+    <div>
       <div class="card">
+        <h2><span class="step">1</span>内容</h2>
         <label>教学主题 <span class="hint">这张图讲什么</span></label>
         <input type="text" id="theme" placeholder="例：钠与水反应的实验现象">
 
@@ -82,6 +172,7 @@
       </div>
 
       <div class="card">
+        <h2><span class="step">2</span>科学性保障</h2>
         <label>显式化补充 <span class="hint">涉及计数/位置/连接时逐条写明，每行一条</span></label>
         <textarea id="explicit" rows="3" placeholder="例：恰好 2 个水分子；两侧原子种类与个数一致&#10;例：温度计水银球恰好位于支管口处"></textarea>
 
@@ -93,27 +184,28 @@
       </div>
 
       <div class="card">
-        <label>角色描述 <span class="hint">可整体替换为你的班本角色</span></label>
+        <h2><span class="step">3</span>风格与角色 <span class="hint" style="letter-spacing:0">可整体替换为你的班本方案</span></h2>
+        <label>角色描述</label>
         <textarea id="character" rows="2">小黑：小型全黑实心怪物，白色圆点眼，细腿，表情呆滞认真。</textarea>
-        <label>风格描述 <span class="hint">一般不用改</span></label>
+        <label>风格描述</label>
         <textarea id="style" rows="4">纯白背景；极简黑色手绘线稿，笔线轻微抖动；大量留白；少量手写体中文标注，只用红/橙/蓝三色平涂。禁止：渐变、阴影、商业矢量风、PPT 信息图、幼稚儿童插画；图上任何位置不写标题。</textarea>
       </div>
     </div>
 
-    <div class="col">
+    <div class="right-stick">
       <div class="card">
-        <label>拼装结果 <span class="ok" id="copied">已复制 ✓</span></label>
+        <h2><span class="step">4</span>拼装结果 <span class="copyok" id="copied">已复制 ✓</span></h2>
         <div id="output"></div>
         <div class="btns">
           <button class="primary" id="copyBtn">复制提示词</button>
           <button id="exampleBtn">载入示例（钠与水）</button>
-          <button id="clearBtn">清空</button>
+          <button class="ghost" id="clearBtn">清空</button>
         </div>
-        <div class="foot">拼装遵循固定五要素：风格 → 角色 → 主题 → 结构（逐格） → 显式化 → 标注白名单 → 约束。角色只能"操作、观察"微观世界，不要让它扮演原子分子本身。</div>
+        <div class="foot">五要素固定顺序：风格 → 角色 → 主题 → 结构（逐格）→ 显式化 → 标注白名单 → 约束。角色只能"操作、观察"微观世界，不要让它扮演原子分子本身。</div>
       </div>
 
-      <details class="api" id="apiPanel">
-        <summary>直连 API 生成（可选 · 进阶）</summary>
+      <details class="api" id="apiPanel" open>
+        <summary><span class="step" style="background:var(--accent)">5</span>直连 API 生成（可选）</summary>
         <div class="inner">
           <label>平台预设</label>
           <select id="apiPreset">
@@ -128,7 +220,6 @@
 
           <label>API Key</label>
           <input type="password" id="apiKey" placeholder="仅保存在本机浏览器，不会上传到任何服务器">
-          <div class="keynote">Key 只存在你这台电脑的浏览器 localStorage 里；网页本身无后端、不收集任何数据。</div>
 
           <label>模型名</label>
           <input type="text" id="apiModel" placeholder="例：doubao-seedream-5.0-lite">
@@ -138,11 +229,11 @@
 
           <div class="btns">
             <button class="primary" id="genBtn">用当前提示词生成图片</button>
-            <button id="saveCfgBtn">保存配置</button>
+            <button class="ghost" id="saveCfgBtn">保存配置</button>
           </div>
-          <div id="genStatus"></div>
+          <div class="status" id="genStatus"></div>
           <div id="resultBox"></div>
-          <div class="keynote">注意：部分平台不允许浏览器网页直接跨域调用（CORS）。若下方报"网络/跨域错误"，说明该平台只能由服务器端调用——请改用"复制提示词"粘贴到平台自己的网页或 App，效果相同。</div>
+          <div class="keynote">Key 仅存于本机浏览器。部分平台不允许网页跨域直连（CORS）——若报"网络/跨域错误"，请改用"复制提示词"粘贴到平台官网或 App，效果相同。</div>
         </div>
       </details>
     </div>
@@ -181,7 +272,7 @@ function assemble() {
 
 $("copyBtn").onclick = () => {
   const txt = $("output").textContent;
-  const done = () => { $("copied").style.visibility = "visible"; setTimeout(() => $("copied").style.visibility = "hidden", 1500); };
+  const done = () => { $("copied").classList.add("show"); setTimeout(() => $("copied").classList.remove("show"), 1500); };
   if (navigator.clipboard && navigator.clipboard.writeText) {
     navigator.clipboard.writeText(txt).then(done).catch(() => fallbackCopy(txt, done));
   } else { fallbackCopy(txt, done); }
@@ -222,21 +313,23 @@ $("apiPreset").onchange = () => {
   $("apiUrl").value = p.url; $("apiModel").value = p.model; $("apiSize").value = p.size;
 };
 
-function saveCfg() {
+let timer = null, t0 = 0;
+function setStatus(kind, msg) {
+  const s = $("genStatus");
+  s.className = "status show " + kind;
+  s.textContent = msg;
+}
+function clearTimer() { if (timer) { clearInterval(timer); timer = null; } }
+
+function saveCfg(silent) {
   try {
     const cfg = Object.fromEntries(A.map(k => [k, $(k).value]));
     cfg.preset = $("apiPreset").value;
     localStorage.setItem("aichem_apicfg", JSON.stringify(cfg));
-    setStatus("配置已保存到本机浏览器。", false);
-  } catch(e) { setStatus("保存失败：" + e.message, true); }
+    if (!silent) setStatus("ok", "✅ 配置已保存到本机浏览器。");
+  } catch(e) { if (!silent) setStatus("err", "❌ 保存失败：" + e.message); }
 }
-$("saveCfgBtn").onclick = saveCfg;
-
-function setStatus(msg, isErr) {
-  const s = $("genStatus");
-  s.textContent = msg;
-  s.className = isErr ? "err" : "";
-}
+$("saveCfgBtn").onclick = () => saveCfg(false);
 
 $("genBtn").onclick = async () => {
   const url = $("apiUrl").value.trim();
@@ -244,11 +337,30 @@ $("genBtn").onclick = async () => {
   const model = $("apiModel").value.trim();
   const size = $("apiSize").value.trim() || "2560x1440";
   const prompt = $("output").textContent;
-  if (!url || !key || !model) { setStatus("请先填写接口地址、API Key 与模型名。", true); return; }
-  saveCfg();
+
+  const missing = [];
+  if (!url) missing.push("接口地址");
+  if (!key) missing.push("API Key");
+  if (!model) missing.push("模型名");
+  if (missing.length) {
+    setStatus("err", "❌ 尚未完成 API 设置——缺少：" + missing.join("、") + "。\n请在上方填写后重试；或直接点「复制提示词」粘贴到 AI 平台使用。");
+    return;
+  }
+  if (!$("theme").value.trim()) {
+    setStatus("err", "❌ 提示词还是空模板（教学主题未填写），请先在左侧填写内容。");
+    return;
+  }
+
+  saveCfg(true);
   $("genBtn").disabled = true;
-  setStatus("生成中……（通常需要 20~120 秒，请勿关闭页面）", false);
   $("resultBox").innerHTML = "";
+  t0 = Date.now();
+  setStatus("busy", "⏳ 生成中… 已等待 0 秒（通常需要 20~120 秒，请勿关闭页面）");
+  clearTimer();
+  timer = setInterval(() => {
+    setStatus("busy", "⏳ 生成中… 已等待 " + Math.round((Date.now()-t0)/1000) + " 秒（通常需要 20~120 秒，请勿关闭页面）");
+  }, 1000);
+
   try {
     const resp = await fetch(url, {
       method: "POST",
@@ -256,22 +368,32 @@ $("genBtn").onclick = async () => {
       body: JSON.stringify({ model: model, prompt: prompt, size: size, response_format: "url", watermark: false })
     });
     const text = await resp.text();
-    let data; try { data = JSON.parse(text); } catch(e) { throw new Error("返回内容不是 JSON：" + text.slice(0, 300)); }
-    if (!resp.ok) throw new Error("HTTP " + resp.status + "：" + (data.error && (data.error.message || JSON.stringify(data.error)) || text.slice(0, 300)));
+    let data; try { data = JSON.parse(text); } catch(e) { throw new Error("平台返回的不是 JSON（可能是接口地址不对）：" + text.slice(0, 200)); }
+    if (!resp.ok) {
+      const em = data.error && (data.error.message || JSON.stringify(data.error)) || text.slice(0, 200);
+      let why = "";
+      if (resp.status === 401) why = "（原因：API Key 无效或未授权）";
+      else if (resp.status === 404) why = "（原因：接口地址或模型名不存在）";
+      else if (resp.status === 429) why = "（原因：调用频率或额度超限）";
+      else if (resp.status === 400) why = "（原因：参数不被该平台接受，如尺寸/模型名）";
+      throw new Error("HTTP " + resp.status + " " + why + "\n" + em);
+    }
     const item = data.data && data.data[0];
-    if (!item) throw new Error("返回中没有图片数据：" + text.slice(0, 300));
+    if (!item) throw new Error("平台返回中没有图片数据：" + text.slice(0, 200));
+    const secs = Math.round((Date.now()-t0)/1000);
     if (item.url) {
-      $("resultBox").innerHTML = '<img src="' + item.url + '" alt="生成结果"><div class="keynote">右键图片可另存；链接通常有时效，请及时保存。</div>';
-      setStatus("生成完成 ✓ 请按质检清单逐项核验后再使用。", false);
+      $("resultBox").innerHTML = '<img src="' + item.url + '" alt="生成结果"><div class="keynote">右键图片可另存；平台图片链接通常有时效，请及时保存。</div>';
     } else if (item.b64_json) {
       $("resultBox").innerHTML = '<img src="data:image/png;base64,' + item.b64_json + '" alt="生成结果"><div class="keynote">右键图片可另存。</div>';
-      setStatus("生成完成 ✓ 请按质检清单逐项核验后再使用。", false);
     } else { throw new Error("未识别的返回格式。"); }
+    clearTimer();
+    setStatus("ok", "✅ 生成成功（用时 " + secs + " 秒）。请按质检清单逐项核验后再使用。");
   } catch(e) {
+    clearTimer();
     if (e instanceof TypeError) {
-      setStatus("网络/跨域错误：该平台可能不允许网页直接调用（CORS 限制），或网络不可达。\n请改用“复制提示词”粘贴到平台官网/App 生成，效果相同。\n（" + e.message + "）", true);
+      setStatus("err", "❌ 网络/跨域错误：该平台可能不允许网页直接调用（CORS 限制），或网络不可达。\n请改用「复制提示词」粘贴到平台官网/App 生成，效果相同。\n（" + e.message + "）");
     } else {
-      setStatus("生成失败：" + e.message, true);
+      setStatus("err", "❌ 生成失败：" + e.message);
     }
   } finally {
     $("genBtn").disabled = false;
