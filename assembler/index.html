@@ -229,6 +229,7 @@
 
           <div class="btns">
             <button class="primary" id="genBtn">用当前提示词生成图片</button>
+            <button id="testBtn">测试 API 连接</button>
             <button class="ghost" id="saveCfgBtn">保存配置</button>
           </div>
           <div class="status" id="genStatus"></div>
@@ -330,6 +331,53 @@ function saveCfg(silent) {
   } catch(e) { if (!silent) setStatus("err", "❌ 保存失败：" + e.message); }
 }
 $("saveCfgBtn").onclick = () => saveCfg(false);
+
+
+$("testBtn").onclick = async () => {
+  const url = $("apiUrl").value.trim();
+  const key = $("apiKey").value.trim();
+  const model = $("apiModel").value.trim();
+  const missing = [];
+  if (!url) missing.push("接口地址");
+  if (!key) missing.push("API Key");
+  if (!model) missing.push("模型名");
+  if (missing.length) {
+    setStatus("err", "❌ 无法测试——缺少：" + missing.join("、") + "。请先填写。");
+    return;
+  }
+  saveCfg(true);
+  $("testBtn").disabled = true;
+  setStatus("busy", "⏳ 正在测试连接……（发送一次空提示词请求，不会消耗生成额度）");
+  try {
+    const resp = await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "Authorization": "Bearer " + key },
+      body: JSON.stringify({ model: model, prompt: "" })
+    });
+    const text = await resp.text();
+    let data = null; try { data = JSON.parse(text); } catch(e) {}
+    if (resp.status === 401 || resp.status === 403) {
+      setStatus("err", "❌ 测试失败：API Key 无效或无权限（HTTP " + resp.status + "）。请检查 Key 是否正确、是否已开通该模型。");
+    } else if (resp.status === 404) {
+      setStatus("err", "❌ 测试失败：接口地址或模型名不存在（HTTP 404）。请核对生图接口完整地址与模型名。");
+    } else if (resp.status === 400 || resp.status === 422) {
+      setStatus("ok", "✅ 连接测试通过：接口可达、API Key 有效。\n（平台按预期拒绝了空提示词，本次测试未消耗生成额度，可以放心点「生成图片」。）");
+    } else if (resp.ok) {
+      setStatus("ok", "✅ 连接测试通过：接口可达、API Key 有效（HTTP " + resp.status + "）。");
+    } else {
+      const em = data && data.error && (data.error.message || JSON.stringify(data.error)) || text.slice(0, 200);
+      setStatus("err", "⚠️ 连接可达，但平台返回 HTTP " + resp.status + "：\n" + em);
+    }
+  } catch(e) {
+    if (e instanceof TypeError) {
+      setStatus("err", "❌ 网络/跨域错误：该平台不允许网页直接调用（CORS 限制），或网络不可达。\n此时「生成图片」也无法直连——请改用「复制提示词」粘贴到平台官网/App 使用。");
+    } else {
+      setStatus("err", "❌ 测试失败：" + e.message);
+    }
+  } finally {
+    $("testBtn").disabled = false;
+  }
+};
 
 $("genBtn").onclick = async () => {
   const url = $("apiUrl").value.trim();
