@@ -6,6 +6,8 @@
 
 **🔧 在线提示词装配器：<https://8848t.github.io/ai-chem-illustrations/assembler/>**（无需下载，打开即用；也可下载 `assembler/index.html` 双击离线使用）
 
+**🇨🇳 国内镜像（论文二维码指向此处）：<http://122.51.214.103/ai-chem/>**
+
 ## 三步上手
 
 1. **填模板**：打开[在线装配器](https://8848t.github.io/ai-chem-illustrations/assembler/)填空，或直接复制 [`prompts/模板.md`](prompts/模板.md) 手动填写；
